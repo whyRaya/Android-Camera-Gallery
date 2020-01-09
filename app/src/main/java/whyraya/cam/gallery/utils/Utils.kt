@@ -18,8 +18,8 @@ object Utils {
     fun getImagePath(ctx: Context) = "${imageDir(ctx)}sample_${System.currentTimeMillis()}.jpg"
 
     private fun imageDir(ctx: Context): String {
-        val path = "${ctx.getExternalFilesDir(null)?.toString()}/EOku/image/"
-        val dir = path.replace("Android/data/com.whyraya.eoku/files/", "")
+        val path = "${ctx.getExternalFilesDir(null)?.toString()}/GalleryCam/image/"
+        val dir = path.replace("Android/data/whyraya.cam.gallery/files/", "")
         directoryExist(File(dir))
         return dir
     }

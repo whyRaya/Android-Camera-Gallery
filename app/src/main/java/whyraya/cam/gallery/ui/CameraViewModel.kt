@@ -47,6 +47,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     val imagePath = repository.getImagePath()
 
+    val message = repository.getMessage()
+
     val flashIcon: LiveData<Int> = Transformations.map(flashMode) {
         when(it) {
             0 -> R.drawable.ic_flash_auto
@@ -95,10 +97,6 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
                     override fun onInfo(message: String) {
                         repository.showMessage(message)
-                    }
-
-                    override fun onConfigured() {
-
                     }
                 })
         }
@@ -172,8 +170,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun setImagePath(path: String) {
-        repository.setImagePath(path)
+    fun clear() {
+        repository.clear()
     }
 
     override fun onCleared() {

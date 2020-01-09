@@ -54,7 +54,7 @@ class Camera2Util(
         this.textureView = textureView
     }
 
-    private val path = getImagePath(activity)
+    private var path = ""
 
     private val cameraFront = "1"
 
@@ -124,6 +124,7 @@ class Camera2Util(
      * still image is ready to be saved.
      */
     private val onImageAvailableListener = ImageReader.OnImageAvailableListener {
+        path = getImagePath(activity)
         backgroundHandler?.post(
             ImageSaver(
                 it.acquireNextImage(), File(path)
@@ -478,7 +479,6 @@ class Camera2Util(
                             Log.e(TAG, e.toString())
                             activity.finish()
                         }
-                        mListener?.onConfigured()
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {
@@ -796,7 +796,5 @@ class Camera2Util(
         fun flashSupported(support: Boolean)
 
         fun onInfo(message: String)
-
-        fun onConfigured()
     }
 }

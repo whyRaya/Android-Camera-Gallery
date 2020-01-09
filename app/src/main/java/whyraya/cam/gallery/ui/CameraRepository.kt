@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.net.Uri
 import android.provider.MediaStore.Images.Media.*
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import whyraya.cam.gallery.data.ImageModel
@@ -50,22 +49,22 @@ class CameraRepository(val app: Application) {
                 rowsToLoad = if (rowsToLoad >= total) total else rowsToLoad
                 allLoaded = rowsToLoad >= total
 
-                Log.e("Test222", "rowsToLoad : $start ~ $rowsToLoad")
                 for (i in start until rowsToLoad) {
                     it.moveToPosition(i)
                     val uri = Uri.withAppendedPath(
                         EXTERNAL_CONTENT_URI,
                         it.getString(it.getColumnIndex(_ID))
                     )
-                    imgData.add(ImageModel().copy(uri = uri))
+                    imgData.add(ImageModel(uri))
                 }
             }
         }
         return imgData
     }
 
-    fun setImagePath(path: String) {
-        imagePath.value = path
+    fun clear() {
+        imagePath.value = ""
+        message.value = ""
     }
 
     fun postImagePath(path: String) {

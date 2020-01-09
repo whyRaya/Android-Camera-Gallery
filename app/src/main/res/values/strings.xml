@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Gallery Cam</string>
+    <string name="app_name">GalleryCam</string>
 
 
     <string name="info_need_permission">"Dear user, this permission are needed to use this feature"</string>
