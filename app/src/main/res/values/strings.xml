@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Gallery Cam</string>
+
+
+    <string name="info_need_permission">"Dear user, this permission are needed to use this feature"</string>
+    <string name="info_never_ask_permission">"You need to manually permit the permission in the setting"</string>
+</resources>

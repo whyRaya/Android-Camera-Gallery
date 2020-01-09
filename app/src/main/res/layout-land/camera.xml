@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+        <import type="whyraya.cam.gallery.R"/>
+        <import type="android.view.View"/>
+        <variable
+            name="viewModel"
+            type="whyraya.cam.gallery.ui.CameraViewModel" />
+    </data>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:ignore="ContentDescription">
+
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
+            android:id="@+id/coordinator"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <com.google.android.material.appbar.AppBarLayout
+                android:id="@+id/appbar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fitsSystemWindows="true"
+                android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+
+                <com.google.android.material.appbar.CollapsingToolbarLayout
+                    android:id="@+id/collapsing_toolbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    app:contentScrim="?attr/colorPrimary"
+                    app:expandedTitleMarginEnd="64dp"
+                    app:expandedTitleMarginStart="48dp"
+                    app:expandedTitleTextAppearance="@android:color/transparent"
+                    app:layout_scrollFlags="scroll">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/item_image_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom"
+                        android:alpha="@{viewModel.mCollapseAlpha}"
+                        android:layout_marginBottom="100dp"/>
+
+                </com.google.android.material.appbar.CollapsingToolbarLayout>
+
+            </com.google.android.material.appbar.AppBarLayout>
+
+            <androidx.core.widget.NestedScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fillViewport="true"
+                android:id="@+id/nested"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/gallery_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+            </androidx.core.widget.NestedScrollView>
+
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+        <FrameLayout
+            android:id="@+id/camera_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:frame="@{viewModel.mPreview}"/>
+
+        <whyraya.cam.gallery.utils.camera2.AutoFitTextureView
+            android:id="@+id/texture"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_alignParentEnd="true"
+            android:alpha="@{viewModel.mCollapseAlpha}"
+            android:gravity="center"
+            android:weightSum="3"
+            android:layout_marginEnd="20dp">
+
+            <ImageButton
+                android:id="@+id/button_flash"
+                android:layout_width="wrap_content"
+                android:layout_weight="1"
+                android:layout_height="0dp"
+                android:background="@android:color/transparent"
+                android:onClick="@{() -> viewModel.setFlashMode()}"
+                android:visibility="@{viewModel.flashSupported? View.VISIBLE : View.INVISIBLE}"
+                android:src="@{viewModel.flashIcon}" />
+
+            <ImageButton
+                android:id="@+id/button_capture"
+                android:layout_width="wrap_content"
+                android:layout_weight="1"
+                android:layout_height="0dp"
+                android:background="@android:color/transparent"
+                android:onClick="@{() -> viewModel.capture()}"
+                android:src="@drawable/ic_shutter" />
+
+
+            <ImageButton
+                android:id="@+id/button_switch"
+                android:layout_width="wrap_content"
+                android:layout_weight="1"
+                android:layout_height="0dp"
+                android:background="@android:color/transparent"
+                android:onClick="@{() -> viewModel.switchCamera()}"
+                android:src="@drawable/ic_camera_switch" />
+
+        </LinearLayout>
+
+
+    </RelativeLayout>
+</layout>
