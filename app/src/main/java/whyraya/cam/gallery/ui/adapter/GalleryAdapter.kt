@@ -11,7 +11,7 @@ import whyraya.cam.gallery.databinding.CameraGalleryItemBinding
 import java.util.*
 
 class GalleryAdapter(
-    private var mData: ArrayList<ImageModel>,
+    private var mData: LinkedList<ImageModel>,
     private val mListener: Listener?
 ) : RecyclerView.Adapter<GalleryAdapter.ViewHolder>() {
 

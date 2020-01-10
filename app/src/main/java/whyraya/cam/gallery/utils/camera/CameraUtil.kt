@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.hardware.Camera
 import android.hardware.camera2.CameraDevice
 import android.view.Surface
+import whyraya.cam.gallery.data.CameraInterface
 import whyraya.cam.gallery.utils.Utils.getImagePath
 import java.io.File
 import java.io.FileNotFoundException
@@ -14,9 +15,8 @@ import java.io.IOException
 
 @Suppress( "deprecation" )
 class CameraUtil(
-    val activity: Activity,
-    flash: Int = 0,
-    private val mListener: Listener? = null
+    private val activity: Activity,
+    private val mListener: CameraInterface? = null
 ) {
 
     var mCamera: Camera? = null
@@ -38,7 +38,7 @@ class CameraUtil(
 
     private var displayOrientation = 0
 
-    private var flashMode = flash
+    private var flashMode = 0
 
     private fun getCameraInstance(): Camera? {
         return try {
@@ -147,13 +147,5 @@ class CameraUtil(
         mCamera?.setPreviewCallback(null)
         mCamera?.release()
         mCamera = null
-    }
-
-    interface Listener {
-        fun onCaptureCompleted(path: String)
-
-        fun flashSupported(support: Boolean)
-
-        fun onInfo(message: String)
     }
 }

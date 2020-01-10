@@ -26,6 +26,7 @@ import whyraya.cam.gallery.utils.PermissionHelper
 import whyraya.cam.gallery.utils.Utils.dpToPx
 import whyraya.cam.gallery.utils.Utils.getPathFromUri
 import java.io.File
+import java.util.*
 
 class CameraActivity: AppCompatActivity(),
     GalleryAdapter.Listener, PermissionHelper.PermissionListener {
@@ -38,13 +39,14 @@ class CameraActivity: AppCompatActivity(),
 
     private lateinit var adapter: GalleryAdapter
 
+    // To detect scroll position from nestedScrollView
     private var vPosition = 0
 
+    // To detect touch status, related to appBar expanded/collapse status
     private var touchDown = false
 
+    // To refresh camera onStart or after orientation change
     private var reInit = true
-
-    private val loadImage = 25
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,8 +58,10 @@ class CameraActivity: AppCompatActivity(),
 
         viewModel.permission = PermissionHelper(this)
         viewModel.permission?.setPermissionListener(this)
+        // Clear every unnecessary data, in case of onCreate after orientation change
         viewModel.clear()
 
+        //Init the layout for horizontal(on camera) and vertical (on nestedScrollView)
         layoutManager = GridLayoutManager(
             this, 1, GridLayoutManager.HORIZONTAL, false)
         binding.itemImageList.itemAnimator = DefaultItemAnimator()
@@ -69,12 +73,31 @@ class CameraActivity: AppCompatActivity(),
         binding.galleryList.layoutManager = GridLayoutManager(this, 3)
         binding.galleryList.isNestedScrollingEnabled = false
 
-        (viewModel.imageData.value?: ArrayList()).let {
+        // Set imageData from viewModel as the source data for Adapter
+        // And since this variable comes from viewModel, it will survive the orientation change
+        // So it will save your old data before Activity is recreated
+        (viewModel.imageData.value?: LinkedList()).let {
             adapter = GalleryAdapter(it, this)
             binding.itemImageList.adapter = adapter
             binding.galleryList.adapter = adapter
         }
 
+        // Observer for fetchGalleryImages data result on repository
+        // It will update the viewModel.imageData then the adapter
+        // And instead notifyDataSetChanged(), use notifyItemRangeInserted for better performance
+        // Since we only update/add 25 data for each fetch
+        viewModel.loadedImage.observe(this, Observer {
+            it?.let {
+                if (it.isNotEmpty()) {
+                    viewModel.imageData.value?.addAll(it)
+                    adapter.notifyItemRangeInserted(adapter.itemCount - it.size, it.size)
+                }
+            }
+        })
+
+        // Triggered when a user take a camera picture
+        // It will insert the result/picture on the first list of Gallery
+        // And show the info about its saved location
         viewModel.imagePath.observe(this, Observer {
             it?.let {
                 if (it.isNotEmpty()) {
@@ -85,6 +108,7 @@ class CameraActivity: AppCompatActivity(),
             }
         })
 
+        // Triggered when the camera not working, another error, etc
         viewModel.message.observe(this, Observer {
             it?.let { if (it.isNotEmpty()) showInfo(it) }
         })
@@ -93,31 +117,46 @@ class CameraActivity: AppCompatActivity(),
         trackMovement()
     }
 
+    /**
+     * Detect the motion or gesture from user and app
+     * When they scroll, fling, touch up, etc
+     * **/
     @SuppressLint("ClickableViewAccessibility")
     private fun trackMovement() {
-        binding.itemImageList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                if (adapter.itemCount >= loadImage &&
-                    layoutManager.findLastVisibleItemPosition() == adapter.itemCount - 1) {
-                    loadPictures()
-                }
-            }
-        })
 
         binding.appbar.addOnOffsetChangedListener(AppBarLayout.OnOffsetChangedListener {
                 appBarLayout, _ ->
             viewModel.onOffsetChanged(appBarLayout)
         })
 
+        // If the adapter reach the end of the item, fetch another 25 image
+        binding.itemImageList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                viewModel.loadPictures(
+                    adapter.itemCount >= viewModel.loadImage &&
+                            layoutManager.findLastVisibleItemPosition() == adapter.itemCount - 1
+                )
+            }
+        })
+
         binding.nested.setOnScrollChangeListener {
                 v: NestedScrollView, _: Int, scrollY: Int, _: Int, _: Int ->
             vPosition = scrollY
-            if (vPosition > 0 && vPosition == (v.getChildAt(0).measuredHeight) - v.measuredHeight)
-                loadPictures()
+            viewModel.loadPictures(
+                vPosition > 0 &&
+                        vPosition == (v.getChildAt(0).measuredHeight) - v.measuredHeight
+            )
         }
 
+        // The main usage of this variable, is to change the alpha from camera button
+        // e.g shutter, flash, and camera switcher
+        // But there's a case when we scroll(fling) the nestedScrollView,
+        // its stopped at half expand/collapse appBar
+        // So we use this variable to also detect the motion fling
         viewModel.mCollapseAlpha.observe(this, Observer {
             it?.let {
+                // appBar layout not fully expand/collapse & user just fling
+                // set full expand (show full camera view)
                 if (it > 0 && touchDown) {
                     touchDown = false
                     binding.nested.scrollTo(0, 0)
@@ -126,6 +165,9 @@ class CameraActivity: AppCompatActivity(),
             }
         })
 
+        // Detect touch on camera,
+        // If user touch up and the appBarLayout/camera is expand <= 75%. set full collapse
+        // else back to full expand
         binding.coordinator.setOnTouchListener { _, event ->
             if (event?.action == MotionEvent.ACTION_UP) {
                 binding.appbar.setExpanded(viewModel.mCollapseAlpha.value?:0f >= 0.75f)
@@ -134,6 +176,8 @@ class CameraActivity: AppCompatActivity(),
             else false
         }
 
+        // Detect touch on nestedScrollView or the gallery below camera
+        // If user touch up and the appBarLayout/camera is expand >= 10%. set full expand
         binding.nested.setOnTouchListener { _, event ->
             touchDown = false
             if (vPosition == 0 && event?.action == MotionEvent.ACTION_UP) {
@@ -148,10 +192,14 @@ class CameraActivity: AppCompatActivity(),
         }
     }
 
+    /**
+     * Because this feature needs be active and without having a need to press a button
+     * Always check its permission status at onResume,
+     * */
     override fun onResume() {
         super.onResume()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val listPermissions = java.util.ArrayList<String>()
+            val listPermissions = ArrayList<String>()
             listPermissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             listPermissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
             listPermissions.add(Manifest.permission.CAMERA)
@@ -163,25 +211,6 @@ class CameraActivity: AppCompatActivity(),
     override fun onPause() {
         super.onPause()
         viewModel.onPause()
-    }
-
-    override fun onPermissionCheckDone() {
-        if (reInit)
-            viewModel.openCamera(this, binding.texture)
-
-        reInit = false
-        viewModel.onResume()
-        if ((viewModel.imageData.value?: ArrayList()).size == 0)
-            loadPictures()
-    }
-
-    private fun loadPictures() {
-        viewModel.getImagesFromGallery(loadImage) {
-            if (it.isNotEmpty()) {
-                viewModel.imageData.value?.addAll(it)
-                adapter.notifyItemRangeInserted(adapter.itemCount - it.size, it.size)
-            }
-        }
     }
 
     override fun onChooseImg(uri: Uri) {
@@ -196,6 +225,19 @@ class CameraActivity: AppCompatActivity(),
         )
         snackBar.setAction("OK") { snackBar.dismiss() }
         snackBar.show()
+    }
+
+    /**
+     * After all permission granted 'Camera & Storage'
+     * */
+    override fun onPermissionCheckDone() {
+        if (reInit)
+            viewModel.openCamera(this, binding.texture)
+
+        reInit = false
+        viewModel.onResume()
+        // load picture if the imageData or adapter still empty
+        viewModel.loadPictures((viewModel.imageData.value?: LinkedList()).size == 0)
     }
 
     override fun onRequestPermissionsResult(

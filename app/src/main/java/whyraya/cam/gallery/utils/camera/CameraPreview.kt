@@ -1,11 +1,8 @@
 package whyraya.cam.gallery.utils.camera
 
-import android.app.Activity
 import android.content.Context
 import android.hardware.Camera
-import android.hardware.Camera.CameraInfo
 import android.util.Log
-import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import java.io.IOException
@@ -67,47 +64,5 @@ class CameraPreview(
                 Log.e("Test222", "Error starting camera preview: ${e.message}")
             }
         }
-    }
-
-    fun setCameraDisplayOrientation(
-        activity: Activity,
-        cameraId: Int, camera: Camera
-    ) {
-        val info = CameraInfo()
-        Camera.getCameraInfo(cameraId, info)
-        val rotation = activity.windowManager.defaultDisplay
-            .rotation
-        val degrees = when (rotation) {
-            Surface.ROTATION_0 ->  0
-            Surface.ROTATION_90 -> 90
-            Surface.ROTATION_180 ->  180
-            Surface.ROTATION_270 ->  270
-            else -> 0
-        }
-        var result: Int
-        if (info.facing == CameraInfo.CAMERA_FACING_FRONT) {
-            result = (info.orientation + degrees) % 360
-            result = (360 - result) % 360 // compensate the mirror
-        } else // back-facing
-            result = (info.orientation - degrees + 360) % 360
-        camera.setDisplayOrientation(result)
-    }
-
-    fun onResume() {
-
-    }
-
-    fun onPause() {
-        mCamera.release()
-    }
-
-    interface Listener {
-        fun onCaptureCompleted(path: String)
-
-        fun flashSupported(support: Boolean)
-
-        fun onInfo(message: String)
-
-        fun onConfigured()
     }
 }

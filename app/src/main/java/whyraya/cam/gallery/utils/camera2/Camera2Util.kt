@@ -18,6 +18,7 @@ import android.view.Surface
 import android.view.TextureView
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import whyraya.cam.gallery.data.CameraInterface
 import whyraya.cam.gallery.utils.Utils.getImagePath
 import java.io.File
 import java.util.*
@@ -28,10 +29,9 @@ import kotlin.collections.ArrayList
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 class Camera2Util(
-    val activity: Activity,
+    private val activity: Activity,
     private var textureView: AutoFitTextureView,
-    flash: Int = 0,
-    private var mListener: Listener? = null
+    private var mListener: CameraInterface? = null
 ) {
 
     private val surfaceTextureListener = object : TextureView.SurfaceTextureListener {
@@ -165,7 +165,7 @@ class Camera2Util(
         CaptureRequest.CONTROL_AE_MODE_ON
     )
 
-    private var flashMode = flash
+    private var flashMode = 0
 
 
     /**
@@ -307,7 +307,6 @@ class Camera2Util(
             // Check if the flash is supported.
             flashSupported =
                 characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-
             mListener?.flashSupported(flashSupported)
 
             // We've found a viable camera and finished setting up member variables,
@@ -422,10 +421,10 @@ class Camera2Util(
             val surface = Surface(texture)
 
             // We set up a CaptureRequest.Builder with the output Surface.
-            previewRequestBuilder = mCameraDevice!!.createCaptureRequest(
-                CameraDevice.TEMPLATE_PREVIEW
-            )
-            previewRequestBuilder.addTarget(surface)
+            mCameraDevice?.let {
+                previewRequestBuilder = it.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+                previewRequestBuilder.addTarget(surface)
+            }?: mListener?.onInfo("Camera error")
 
             // Here, we create a CameraCaptureSession for camera preview.
             mCameraDevice?.createCaptureSession(
@@ -787,14 +786,5 @@ class Camera2Util(
                 }
             }
         }
-    }
-
-
-    interface Listener {
-        fun onCaptureCompleted(path: String)
-
-        fun flashSupported(support: Boolean)
-
-        fun onInfo(message: String)
     }
 }
